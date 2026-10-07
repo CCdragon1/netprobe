@@ -4,7 +4,32 @@
 
 **定位**：贴合你的双主轴——既是 Linux 练手项目（网络诊断实操），又是一个 24h 轻量网络服务。
 
+## English Overview
+
+**NetProbe** is a lightweight network reachability & latency probe service that runs 24/7 on a small cloud VPS. It measures how well a server can reach different targets across vendors, regions, and the domestic/international boundary — turning opaque connectivity problems (slow GitHub, unreachable Google, cloud-provider IP blocks by some campus networks, etc.) into concrete, quantifiable metrics.
+
+**What it probes**:
+
+| Dimension | Description | Probe type |
+|---|---|---|
+| TCP connectivity | Can a host:port be reached, and how fast is the handshake | `tcp` |
+| TLS handshake | TLS negotiation latency for HTTPS endpoints | `tls` |
+| HTTP response | Status code + total response time | `http` / `https` |
+| DNS resolution | Whether a given DNS server answers, and how fast | `dns` |
+| ICMP reachability | ping RTT / packet loss | `icmp` |
+| Download speed | Real throughput against a URL | `speed` (reserved) |
+
+**Architecture** — three layers:
+
+- `config/targets.json` — editable target list, grouped into `self` / `abroad` / `domestic`
+- `prober/` — pure-stdlib Python prober (zero third-party deps), runs on a timer and stores results into SQLite
+- `webapp/` — a single-file Flask dashboard showing a green/yellow/red status grid with per-target history
+
+**Zero-dependency core, minimal footprint** — the prober uses only the Python standard library; the dashboard needs only Flask. Designed to run comfortably on a 2-core / ~1.6 GB RAM instance.
+
 ---
+
+## 一、它能测什么
 
 ## 一、它能测什么
 
