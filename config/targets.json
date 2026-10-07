@@ -1,0 +1,143 @@
+# 目标清单配置（JSON）
+# 每个目标一个对象，字段说明：
+#   id      唯一标识（用于看板/历史）
+#   name    显示名
+#   group   分组：self(自有节点) / abroad(境外) / domestic(国内)
+#   type    探测类型：icmp | tcp | http | dns
+#   host    目标主机（域名或 IP）
+#   port    端口（tcp/http 用）
+#   path    HTTP 路径（http 用，默认 /）
+#   enabled 是否启用
+#
+# 提示：把下面占位 IP 换成你自己的真实地址：
+#   - "小主机" 填海尔博越小主机的内网穿透出口 / frp 映射地址
+#   - "VPS"    填 RackNerd VPS 的公网 IP 或域名
+#   - "ECS本机" 填 127.0.0.1（测本机回环）
+
+{
+  "targets": [
+    {
+      "id": "self-home",
+      "name": "家里小主机",
+      "group": "self",
+      "type": "tcp",
+      "host": "YOUR_HOME_HOST_OR_FRP_ADDR",
+      "port": 7000,
+      "enabled": false
+    },
+    {
+      "id": "self-vps",
+      "name": "RackNerd VPS",
+      "group": "self",
+      "type": "tcp",
+      "host": "YOUR_VPS_IP",
+      "port": 22,
+      "enabled": false
+    },
+    {
+      "id": "self-loop",
+      "name": "ECS 本机回环",
+      "group": "self",
+      "type": "tcp",
+      "host": "127.0.0.1",
+      "port": 22,
+      "enabled": true
+    },
+
+    {
+      "id": "github",
+      "name": "GitHub",
+      "group": "abroad",
+      "type": "https",
+      "host": "github.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "google",
+      "name": "Google",
+      "group": "abroad",
+      "type": "https",
+      "host": "www.google.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "group": "abroad",
+      "type": "https",
+      "host": "www.cloudflare.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "cloudflare-dns",
+      "name": "Cloudflare DNS 1.1.1.1",
+      "group": "abroad",
+      "type": "dns",
+      "host": "1.1.1.1",
+      "enabled": true
+    },
+    {
+      "id": "google-dns",
+      "name": "Google DNS 8.8.8.8",
+      "group": "abroad",
+      "type": "dns",
+      "host": "8.8.8.8",
+      "enabled": true
+    },
+    {
+      "id": "dockerhub",
+      "name": "Docker Hub",
+      "group": "abroad",
+      "type": "https",
+      "host": "registry-1.docker.io",
+      "port": 443,
+      "path": "/v2/",
+      "enabled": true
+    },
+
+    {
+      "id": "aliyun",
+      "name": "阿里云",
+      "group": "domestic",
+      "type": "https",
+      "host": "www.aliyun.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "tencent",
+      "name": "腾讯云",
+      "group": "domestic",
+      "type": "https",
+      "host": "cloud.tencent.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "baidu",
+      "name": "百度",
+      "group": "domestic",
+      "type": "https",
+      "host": "www.baidu.com",
+      "port": 443,
+      "path": "/",
+      "enabled": true
+    },
+    {
+      "id": "ali-dns",
+      "name": "阿里 DNS 223.5.5.5",
+      "group": "domestic",
+      "type": "dns",
+      "host": "223.5.5.5",
+      "enabled": true
+    }
+  ]
+}

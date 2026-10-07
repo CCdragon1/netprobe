@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>网络探测看板 NetProbe</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8;
+    --ok: #22c55e; --warn: #eab308; --fail: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { padding: 20px 24px; border-bottom: 1px solid var(--border);
+           display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  header h1 { font-size: 1.3rem; margin: 0; }
+  .meta { color: var(--muted); font-size: .85rem; }
+  .legend { display: flex; gap: 16px; font-size: .85rem; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.fail { background: var(--fail); }
+
+  .group-title { padding: 16px 24px 6px; font-size: .9rem; color: var(--muted);
+                 text-transform: uppercase; letter-spacing: .05em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 14px; padding: 8px 24px 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 14px 16px; cursor: pointer; transition: transform .1s, border-color .1s; }
+  .card:hover { transform: translateY(-2px); border-color: var(--muted); }
+  .card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .card .name { font-weight: 600; }
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: .72rem; font-weight: 600; }
+  .badge.ok { background: rgba(34,197,94,.15); color: var(--ok); }
+  .badge.fail { background: rgba(239,68,68,.15); color: var(--fail); }
+  .badge.warn { background: rgba(234,179,8,.15); color: var(--warn); }
+  .metric { font-size: 1.6rem; font-weight: 700; margin: 4px 0; }
+  .metric small { font-size: .8rem; color: var(--muted); font-weight: 400; }
+  .sub { color: var(--muted); font-size: .8rem; word-break: break-all; }
+  .sub .err { color: var(--fail); }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+           z-index: 10; align-items: center; justify-content: center; padding: 20px; }
+  .modal.open { display: flex; }
+  .modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+               width: 100%; max-width: 720px; max-height: 80vh; overflow: auto; padding: 20px; }
+  .modal-box h2 { margin: 0 0 16px; font-size: 1.1rem; }
+  .close { float: right; cursor: pointer; color: var(--muted); font-size: 1.4rem; line-height: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; }
+  .refresh { background: #2563eb; color: #fff; border: none; padding: 8px 14px;
+             border-radius: 8px; cursor: pointer; font-size: .85rem; }
+  .refresh:hover { background: #1d4ed8; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>网络探测看板 <span style="font-weight:400;color:var(--muted)">NetProbe</span></h1>
+    <div class="meta" id="meta">加载中…</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="legend">
+      <span><span class="dot ok"></span>正常</span>
+      <span><span class="dot warn"></span>缓慢</span>
+      <span><span class="dot fail"></span>不通</span>
+    </div>
+    <button class="refresh" onclick="load()">刷新</button>
+  </div>
+</header>
+
+<div id="content"><div class="empty">加载中…</div></div>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <span class="close" onclick="closeModal()">×</span>
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const GROUP_LABEL = { self: "自有节点", abroad: "境外站点", domestic: "国内站点" };
+
+function statusOf(r) {
+  if (!r.ok) return "fail";
+  const m = r.metric;
+  if (m != null && m > 1500) return "warn";   // 延迟 > 1.5s 视为缓慢
+  return "ok";
+}
+
+function fmtMetric(r) {
+  if (r.metric == null) return "—";
+  let unit = "ms";
+  return r.metric + unit;
+}
+
+function renderCards(data) {
+  const groups = {};
+  data.forEach(r => {
+    const g = r.grp || "unknown";
+    (groups[g] = groups[g] || []).push(r);
+  });
+  let html = "";
+  for (const g of ["self", "abroad", "domestic"]) {
+    if (!groups[g]) continue;
+    html += `<div class="group-title">${GROUP_LABEL[g] || g}</div><div class="grid">`;
+    groups[g].forEach(r => {
+      const st = statusOf(r);
+      const label = st === "ok" ? "正常" : (st === "warn" ? "缓慢" : "不通");
+      const err = r.error ? `<div class="sub err">${escapeHtml(r.error)}</div>` : "";
+      const code = r.http_code != null ? ` · HTTP ${r.http_code}` : "";
+      html += `
+        <div class="card" onclick="showHistory('${r.target_id}','${escapeHtml(r.name)}')">
+          <div class="top"><span class="name">${escapeHtml(r.name)}</span>
+            <span class="badge ${st}">${label}</span></div>
+          <div class="metric">${fmtMetric(r)} <small>${r.metric_label || ""}</small></div>
+          <div class="sub">${r.typ} · ${escapeHtml(r.host)}${r.port ? ":" + r.port : ""}${code}</div>
+          ${err}
+        </div>`;
+    });
+    html += `</div>`;
+  }
+  return html || '<div class="empty">暂无数据，请先运行探测器。</div>';
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function load() {
+  const [latest] = await Promise.all([fetch("/api/latest").then(r => r.json())]);
+  document.getElementById("content").innerHTML = renderCards(latest);
+  const ok = latest.filter(r => r.ok).length;
+  document.getElementById("meta").textContent =
+    `共 ${latest.length} 个目标 · ${ok} 正常 · 最近更新 ${latest.length ? latest[0].ts : "—"}`;
+}
+
+async function showHistory(id, name) {
+  document.getElementById("modal-title").textContent = name + " — 历史记录";
+  const hist = await fetch(`/api/history/${id}`).then(r => r.json());
+  let rows = hist.map(h => `
+    <tr><td>${h.ts}</td>
+        <td style="color:${h.ok ? "var(--ok)" : "var(--fail)"}">${h.ok ? "正常" : "不通"}</td>
+        <td>${h.metric ?? "—"}</td>
+        <td>${h.http_code ?? "—"}</td>
+        <td>${escapeHtml(h.error || "")}</td></tr>`).join("");
+  document.getElementById("modal-body").innerHTML =
+    `<table><thead><tr><th>时间</th><th>状态</th><th>延迟(ms)</th><th>HTTP</th><th>错误</th></tr></thead>
+     <tbody>${rows || '<tr><td colspan="5">暂无历史</td></tr>'}</tbody></table>`;
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeModal() { document.getElementById("modal").classList.remove("open"); }
+
+load();
+setInterval(load, 60000);   // 每 60s 自动刷新
+</script>
+</body>
+</html>

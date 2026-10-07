@@ -1,0 +1,10 @@
+# 运行时生成的文件，不提交
+data/
+__pycache__/
+*.pyc
+nohup.out
+*.log
+
+# 本地调试
+.vscode/
+.idea/
