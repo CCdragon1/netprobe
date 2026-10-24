@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetProbe · 网络通信能力探测服务</title>
+<meta name="description" content="NetProbe 是一个轻量级网络可达性与延迟探测服务，用于量化不同厂商、不同地域之间的网络通信质量。">
+<style>
+:root{
+  --bg:#0D1117;
+  --surface:#161B22;
+  --surface-2:#1C2128;
+  --border:#30363D;
+  --text:#E6EDF3;
+  --muted:#8B949E;
+  --faint:#6E7681;
+  --green:#3FB950;
+  --green-dim:#238636;
+  --amber:#D29922;
+  --red:#F85149;
+  --blue:#58A6FF;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:16px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 24px}
+
+/* hero */
+.hero{padding:88px 0 64px;border-bottom:1px solid var(--border)}
+.status{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--green);
+  background:rgba(63,185,80,.10);
+  border:1px solid rgba(63,185,80,.30);
+  padding:4px 12px;border-radius:999px;margin-bottom:26px;
+  font-family:var(--mono);
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);flex:none;
+}
+.hero h1{
+  font-size:48px;font-weight:600;letter-spacing:-.03em;
+  line-height:1.15;margin-bottom:18px;
+  font-family:var(--mono);
+}
+.hero h1 span{color:var(--green)}
+.hero .lead{
+  font-size:18px;color:var(--muted);max-width:660px;
+  line-height:1.7;
+}
+.hero .lead b{color:var(--text);font-weight:500}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.tags span{
+  font-size:12.5px;font-family:var(--mono);
+  color:var(--muted);background:var(--surface);
+  border:1px solid var(--border);
+  padding:3px 10px;border-radius:6px;
+}
+
+/* sections */
+section{padding:56px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+h2{
+  font-size:13px;font-weight:600;letter-spacing:.10em;
+  text-transform:uppercase;color:var(--faint);
+  margin-bottom:26px;font-family:var(--mono);
+}
+h2::before{content:"// ";color:var(--green-dim)}
+h3{font-size:17px;font-weight:600;margin-bottom:8px}
+p.body{font-size:15.5px;color:var(--muted);max-width:700px}
+p.body + p.body{margin-top:14px}
+p.body b{color:var(--text);font-weight:500}
+
+/* probe grid */
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:12px;margin-top:28px;
+}
+.item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:18px 20px;
+  transition:border-color .18s,background .18s;
+}
+.item:hover{border-color:#484F58;background:var(--surface-2)}
+.item .k{
+  font-family:var(--mono);font-size:12px;
+  color:var(--green);margin-bottom:8px;
+  letter-spacing:.02em;
+}
+.item h4{font-size:15.5px;font-weight:600;margin-bottom:6px}
+.item p{font-size:13.5px;color:var(--muted);line-height:1.65}
+
+/* targets */
+.targets{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;margin-top:28px;
+}
+.tcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:20px;
+  border-top:2px solid var(--green-dim);
+}
+.tcard .label{
+  font-family:var(--mono);font-size:11.5px;
+  color:var(--faint);letter-spacing:.04em;margin-bottom:10px;
+}
+.tcard h4{font-size:15.5px;font-weight:600;margin-bottom:6px}
+.tcard p{font-size:13.5px;color:var(--muted);line-height:1.65}
+.tcard:nth-child(2){border-top-color:var(--amber)}
+.tcard:nth-child(3){border-top-color:var(--blue)}
+
+/* code */
+pre{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:20px 22px;overflow-x:auto;
+  font-family:var(--mono);font-size:13.5px;line-height:1.8;
+  color:#C9D1D9;margin-top:24px;
+}
+pre .c{color:var(--faint)}
+pre .g{color:var(--green)}
+pre .b{color:var(--blue)}
+pre .y{color:var(--amber)}
+
+/* flow */
+.flow{
+  display:flex;align-items:stretch;gap:0;margin-top:28px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+}
+.flow .step{
+  flex:1;padding:20px 18px;position:relative;
+}
+.flow .step + .step{border-left:1px solid var(--border)}
+.flow .step .n{
+  font-family:var(--mono);font-size:11px;color:var(--faint);
+  margin-bottom:8px;
+}
+.flow .step h5{font-size:14.5px;font-weight:600;margin-bottom:5px}
+.flow .step p{font-size:13px;color:var(--muted);font-family:var(--mono);line-height:1.6}
+
+/* note */
+.note{
+  background:rgba(88,166,255,.07);
+  border:1px solid rgba(88,166,255,.25);
+  border-radius:10px;padding:16px 20px;margin-top:28px;
+  font-size:14px;color:#A5C9EA;
+}
+.note b{color:var(--blue);font-weight:600}
+
+/* footer */
+footer{
+  padding:40px 0 56px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:14px;
+  font-size:13.5px;color:var(--faint);
+}
+footer a{
+  color:var(--muted);text-decoration:none;
+  font-family:var(--mono);font-size:13px;
+  border-bottom:1px solid transparent;transition:.15s;
+}
+footer a:hover{color:var(--green);border-bottom-color:var(--green)}
+
+@media(max-width:680px){
+  .hero{padding:56px 0 44px}
+  .hero h1{font-size:34px}
+  .hero .lead{font-size:16px}
+  .targets{grid-template-columns:1fr}
+  .flow{flex-direction:column}
+  .flow .step + .step{border-left:none;border-top:1px solid var(--border)}
+  section{padding:44px 0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="status"><span class="dot"></span>运行中 · 每 10 分钟探测一轮</div>
+  <h1>Net<span>Probe</span></h1>
+  <p class="lead">
+    一台服务器能连上什么、连得多快、连不上是卡在哪一层——
+    <b>NetProbe 把这些说不清的网络问题，变成可量化、可追溯的数字。</b>
+  </p>
+  <div class="tags">
+    <span>Python</span>
+    <span>stdlib only</span>
+    <span>Flask</span>
+    <span>SQLite</span>
+    <span>systemd</span>
+  </div>
+</header>
+
+<section>
+  <h2>它能测什么</h2>
+  <p class="body">
+    "网络不通"是个过于笼统的说法。是 DNS 没解析出来？TCP 握手被拒？还是 TLS 协商就卡住了？
+    NetProbe 按层拆开测，让你知道问题究竟停在哪一步。
+  </p>
+  <div class="grid">
+    <div class="item">
+      <div class="k">tcp</div>
+      <h4>TCP 连通</h4>
+      <p>能不能建立连接，握手花了多久。最基础的通断判断。</p>
+    </div>
+    <div class="item">
+      <div class="k">tls</div>
+      <h4>TLS 握手</h4>
+      <p>HTTPS 站点的加密协商耗时。跨境站点卡在这一层很常见。</p>
+    </div>
+    <div class="item">
+      <div class="k">http</div>
+      <h4>HTTP 响应</h4>
+      <p>状态码加上完整的响应时间，判断对方是拒绝还是单纯慢。</p>
+    </div>
+    <div class="item">
+      <div class="k">dns</div>
+      <h4>DNS 解析</h4>
+      <p>指定 DNS 服务器是否应答、响应多快。解析慢会让所有访问都慢。</p>
+    </div>
+    <div class="item">
+      <div class="k">icmp</div>
+      <h4>ICMP 通断</h4>
+      <p>ping 的往返延迟与丢包率，看链路质量的底色。</p>
+    </div>
+    <div class="item">
+      <div class="k">speed</div>
+      <h4>下载测速</h4>
+      <p>对指定 URL 测真实吞吐量。已有实现，按需启用。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>测谁</h2>
+  <p class="body">
+    目标清单写在一个 JSON 文件里，随时增删。默认按三类分组，一眼看出差异在哪。
+  </p>
+  <div class="targets">
+    <div class="tcard">
+      <div class="label">SELF</div>
+      <h4>自有节点</h4>
+      <p>自己的小主机、VPS、云服务器之间互测，确认隧道和映射是否正常。</p>
+    </div>
+    <div class="tcard">
+      <div class="label">ABROAD</div>
+      <h4>境外站点</h4>
+      <p>GitHub、Cloudflare 这类，看跨境链路的真实质量。</p>
+    </div>
+    <div class="tcard">
+      <div class="label">DOMESTIC</div>
+      <h4>国内站点</h4>
+      <p>主流云厂商与公共 DNS，作为对照组，衡量跨地域延迟基线。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>怎么跑起来的</h2>
+  <p class="body">
+    三层结构，各管一件事。探测器只用 Python 标准库，零第三方依赖，
+    2 核 / 1.6G 的小机器跑起来毫无压力。
+  </p>
+<pre><span class="c">netprobe/</span>
+├── <span class="b">config/targets.json</span>   <span class="c"># 目标清单，改这里加减目标</span>
+├── <span class="b">prober/</span>
+│   ├── probe.py          <span class="c"># 探测核心库（纯标准库）</span>
+│   └── run.py            <span class="c"># 定时执行：探测 + 落库 SQLite</span>
+├── <span class="b">webapp/app.py</span>          <span class="c"># 单文件 Flask 看板</span>
+├── <span class="b">templates/index.html</span>   <span class="c"># 看板前端</span>
+└── <span class="c">data/netprobe.db</span>       <span class="c"># 结果库（自动生成）</span></pre>
+
+  <div class="flow">
+    <div class="step">
+      <div class="n">01</div>
+      <h5>定时探测</h5>
+      <p>systemd timer<br>每 10 分钟一轮</p>
+    </div>
+    <div class="step">
+      <div class="n">02</div>
+      <h5>结果落库</h5>
+      <p>SQLite<br>保留完整历史</p>
+    </div>
+    <div class="step">
+      <div class="n">03</div>
+      <h5>看板呈现</h5>
+      <p>绿 / 黄 / 红<br>一眼定位异常</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>快速开始</h2>
+<pre><span class="c"># 1. 装看板依赖（探测器零依赖）</span>
+pip3 install flask
+
+<span class="c"># 2. 改目标清单</span>
+vim config/targets.json
+
+<span class="c"># 3. 先跑一轮看看</span>
+python3 prober/run.py
+
+<span class="c"># 4. 交给 systemd 常驻</span>
+systemctl enable --now netprobe.timer
+systemctl enable --now netprobe-web
+
+<span class="c"># 5. 本地访问看板</span>
+curl <span class="g">http://127.0.0.1:8088</span></pre>
+
+  <div class="note">
+    <b>为什么这个页面上看不到实时数据？</b><br>
+    因为这里是 GitHub Pages，它只托管静态文件，跑不了 Python。
+    真正的看板在服务器上常驻运行，含内网拓扑信息，只对授权访问开放。
+    这个页面本身，是一个"静态外壳 + 动态数据源"分工的例子。
+  </div>
+</section>
+
+<footer>
+  <span>NetProbe · 一个关于网络可见性的练手项目</span>
+  <a href="https://github.com/CCdragon1/netprobe">查看源码 →</a>
+</footer>
+
+</div>
+</body>
+</html>
